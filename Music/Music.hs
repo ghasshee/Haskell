@@ -60,3 +60,7 @@ randomList low high            = do
 randomSounds key dur p low high n    = do 
         r       <- randomList low high 
         return $ ( line . take n . pSoundList key dur p low high ) r
+
+
+-- DRUM SOUND
+drum1 = times 8 $ line $ [rep 8 $ perc LowTom (1/32), rep 6 $ perc LowTom en]
