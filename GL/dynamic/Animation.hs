@@ -12,7 +12,7 @@ vec             = Vector3
 
 width = 500
 height = 500
-backcolor = Color4 100 100 100 100
+backcolor = Color4 0 0 0 0 
 
 call d x y z r ex ey ez ox oy oz t = do 
      d x y z t

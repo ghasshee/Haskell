@@ -1,4 +1,4 @@
-ghc = stack ghc
+ghc = ghc
 src = eg.hs
 
 all : 
