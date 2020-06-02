@@ -20,11 +20,13 @@ f05 z       =  (z -(C 0 1)) * (z -(C 0.5 0.8)  )
 f06 z       = z^2 + z
 f07 z       = - ( z - (C 0 1) ) / (C 2 0) 
 f08 z       = z^2 + 1
+f09 z       = z^3 - (C 3 0)*z
 -- f          = pow (C 1 0.2)   
 -- f z  = z * ( pow_i z ) 
 -- f z = pow (-i)  z + pow i z    
 -- f z = pow i (z^2 + one/z) 
-f z = one/ (z-(C 1 1)) 
+--f z = one/ (z-(C 1 1)) 
+f = f09
 
 f'                          = modify f riemann
 modify f  riemann           = filter small . fmap ( fmap ( riemann . fromComplex . zoomdown 1 . f . toComplex )   ) 

@@ -21,17 +21,24 @@ f05 z       = (z-i)*(z-(0.5,0.8))
 f06 z       = z^2 + z
 f07 z       = -(z-i)/two :: Complex 
 f08 z       = pow i (z^2) 
+-- strip  (x,y)  =  pow 3 (x,y+3) +  pow 2 (x,-y+3)  
 --  f  z        = pow (1,0.2)   
 --  f  z        = z * pow i z 
 --  f  z        =  pow i  z  
 --  f  z        = (-)(0.2,0.3) $ pow(1,0.3) $ z^2+one+z 
 --  f  z        =  pow (sqrt z) z  
-joukowski z = z + one/z 
+-- joukowski z = z + one/z 
 -- f z = sin (pow z i)  
 
 f           :: Complex -> Complex 
-f            = pow (1,-0.3) 
-f' f         = modify f id 6
+--f  = id  
+acos+ z =   i * log ( z + (pow (0.5,0) (z^2 + 1)))
+acos- z = - i * log ( z + (pow (0.5,0) (z^2 + 1)))
+
+f z = z^3 - (3,0) * z
+
+--f         (x,y) = exp (pow (1,0.05) ((x,y)+6*i) ) 
+f' f         = modify f id 5
 
 {------------------- MAIN -------------------} 
 
@@ -40,7 +47,7 @@ display = do
     clear [ColorBuffer]
     -- lookAt (toVtx camera) (toVtx target) (toVec up)
     --joukowskiAirfoil
-    displayGrid 
+    displayGrid 1 1 
     flush
 
 main                            ::  IO ()
@@ -82,8 +89,8 @@ joukowskiAirfoil                =   do
     circle2airfoil 20 20
 
 displayCircle                   =   do 
-    displayImage 1 0 0 0 $ f' f $ circle (-0.11,0.11) 0.11 10000
-    displayImage 0 1 1 0 $ f' id $ circle (-0.1,0.1) 0.1 1000
+    displayImage 1 0 0 0 $ f' f     $ circle (-0.11,0.11)   0.11 10000
+    displayImage 0 1 1 0 $ f' id    $ circle (-0.1,0.1)     0.1 1000
 
 circle2airfoil n 0              =   return () 
 circle2airfoil n k              =   do
@@ -97,15 +104,15 @@ circle (a,b) r ε                =   pts2lines(map fromComplex circle_pts)(map(f
 ε = 1/400
 δ = 1/20
 
-displayGrid = do
---    displayImage 1 0.7 1 0      $ f' f $ grid (δ,-δ) (1,δ)     δ ε
-    displayImage 1 0.5 0.5 0    $ f' f $ grid (-δ,δ) (δ,1)     δ ε
-    displayImage 0.5 1 0.5 0    $ f' f $ grid (-1,-δ)(-δ,δ)    δ ε
-    displayImage 0.7 1 1 0      $ f' f $ grid (-δ,-1)(δ,-δ)    δ ε
-    displayImage 1 0 1 0        $ f' f $ grid (δ,δ)  (1,1)     δ ε 
-    displayImage 1 1 0 0        $ f' f $ grid (-1,δ) (-δ,1)    δ ε 
-    displayImage 0 1 1 0        $ f' f $ grid (-1,-1)(-δ,-δ)   δ ε 
-    displayImage 1 1 1 0        $ f' f $ grid (δ,-1) (1,-δ)    δ ε 
+displayGrid x y = do
+    displayImage 1 0.7 1 0      $ f' f $ grid (δ,-δ) (x,δ)     δ ε
+    displayImage 1 0.5 0.5 0    $ f' f $ grid (-δ,δ) (δ,y)     δ ε
+    displayImage 0.5 1 0.5 0    $ f' f $ grid (-x,-δ)(-δ,δ)    δ ε
+    displayImage 0.7 1 1 0      $ f' f $ grid (-δ,-y)(δ,-δ)    δ ε
+    displayImage 1 0 1 0        $ f' f $ grid (δ,δ)  (x,y)     δ ε 
+    displayImage 1 1 0 0        $ f' f $ grid (-x,δ) (-δ,y)    δ ε 
+    displayImage 0 1 1 0        $ f' f $ grid (-x,-y)(-δ,-δ)   δ ε 
+    displayImage 1 1 1 0        $ f' f $ grid (δ,-y) (x,-δ)    δ ε 
 
 grid                            ::  Complex -> Complex  -> GLdouble -> GLdouble -> [[Three]]
 grid   a b itval ε              =   xlines a b itval ε ++ ylines a b itval ε 
