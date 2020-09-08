@@ -4,6 +4,7 @@ import Data.Tuple (swap)
 import Control.Monad
 import Control.Applicative 
 
+-- parse :: String -> [(a,String)] -> Parser a 
 newtype Parser a    =   Parser { parse :: String -> [(a,String)] }
 
 runParser           ::  Parser a -> String -> a 
