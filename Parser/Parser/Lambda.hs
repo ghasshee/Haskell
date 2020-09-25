@@ -1,106 +1,102 @@
-module Parser.Lambda  where 
+module Main where 
 
-import Parser.Core
+import Prelude hiding (abs) 
 import Data.Char
-import Control.Applicative
 import Control.Monad
-
-oneOf               ::  [Char]   -> Parser Char 
-oneOf s             =   satisfy (elem_of s) 
-elem_of s c         =   flip elem s c 
-
--- chainl              ::  Parser a -> Parser (a -> a -> a) -> a -> Parser a
--- chainl pa pop a     =   (pa `chainl1` pop) <|> return a
-
-chainl1             ::  Parser a -> Parser (a -> a -> a) -> Parser a 
-p `chainl1` op      =   do { a <- p; rest p op a }
-rest pa pop a       =   do { op <- pop; b <- pa; rest pa pop (op a b) } <|> return a  
-
-(#) = chainl1 
-
-char                ::  Char     -> Parser Char
-char  c             =   satisfy (c ==)
-
-nat                 ::  Parser Integer 
-nat                 =   read <$> natStr
-natStr              ::  Parser String
-natStr              =   some (satisfy isDigit)
-
-str                 ::  String   -> Parser String
-str  ""             =   return []
-str  (c:cs)         =   do { char c; str cs; return (c:cs)}
-
-token               ::  Parser a -> Parser a 
-token   p           =   do { a <- p; spaces ; return a }
-
-reserved            ::  String   -> Parser String 
-reserved s          =   token (str s) 
-
-spaces              ::  Parser String
-spaces              =   many $ oneOf " \n\r"
-
-digit               ::  Parser Char
-digit               =   satisfy isDigit
-
-number              ::  Parser Integer
-number              =   do { s<-str "-" <|> return []; cs<-some digit; return $ read(s++cs) }
-num                 =   token number 
-
-parens              :: Parser a -> Parser a
-parens m            = do { reserved "("; spaces; n <- m; spaces; reserved ")"; return n }
+import Control.Applicative hiding (some,many) 
+import Core 
 
 
+{------------------ Syntax --------------------} 
 
-data Expr
-    = Add Expr Expr
-    | Mul Expr Expr
-    | Sub Expr Expr
-    | Lit Integer
-    deriving Show
+type Context = [String] 
 
-eval    :: Expr -> Integer
-eval ex = case ex of 
-    Add a b -> eval a + eval b
-    Mul a b -> eval a * eval b
-    Sub a b -> eval a - eval b
-    Lit n   -> n
+data Term   = TmAbs Term 
+            | TmApp Term Term 
+            | TmVar Int           deriving (Show, Eq)
+
+str2index = loop 0      where   
+    loop :: Int -> String -> Context -> Int 
+    loop n str []        =   error "Variable Lookup Error" 
+    loop n str (x:xs)    =   if x == str then n else loop(n+1) str xs  
+
+index2str i list = (!!) list i  
 
 
--- Backus-Naur Form 
--- number   = [ "-" ] digit { digit }.
--- digit    = "0" | "1" | ... | "8" | "9".
--- expr     = term      { addop term    }.
--- term     = factor    { mulop factor  }.
--- factor   = "(" expr ")" | number.
--- addop    = "+" | "-"
--- mulop    = "*"
+{---------------- Parser ---------------------} 
 
-int             ::  Parser Expr
-int             =   num >>= return . Lit  
+line            = do {spaces; t <- ( term <*> pure [] ); spaces;  return t }    :: Parser Term 
 
-expr            ::  Parser Expr
-expr            =   term # addop 
+term        = infix_chainl1 nonapp (spaces >> return (\t1 t2 ctx -> TmApp(t1 ctx)(t2 ctx)))
+nonapp      =   var  
+            <|> abs term 
+            <|> parens term 
 
-term            ::  Parser Expr
-term            =   factor # mulop
+abs term    =   do { 
+    spaces; 
+    reserved "\\";
+    list space; 
+    str     <- ident;
+    list space; 
+    reserved "."; 
+    spaces; 
+    t       <- term ; 
+    spaces; 
+    return $ \ctx -> (TmAbs (t(str:ctx)))  }  
 
-factor          ::  Parser Expr
-factor          =   int <|> parens expr
+var             =  parens term <|> do{
+    str <- ident; 
+    let _ = print "var is parsed" in 
+    return $ \ctx -> TmVar (str2index str ctx) }
 
-infixOp         ::  String -> (a->a->a) -> Parser(a->a->a)
-infixOp x f     =   reserved x >> return f
 
-addop           ::  Parser (Expr -> Expr -> Expr)
-addop           =   (infixOp "+" Add) <|> (infixOp "-" Sub)
+{------------------ Eval  --------------------} 
 
-mulop           ::  Parser (Expr -> Expr -> Expr)
-mulop           =   infixOp "*" Mul
 
-run     :: String   -> Expr
-run     = runParser expr
+tmSubstTop t t2         =   tmShift (-1) (tmSubst 0 (tmShift 1 t) t2)
+tmSubst  j t t2         =   walk (tmSubstOnVar j t t2) 0 t2
+tmSubstOnVar j t t2     =   \c i -> if i==j+c then tmShift c t else TmVar i 
+
+tmShift d               =   tmShiftAbove d 0 
+tmShiftAbove d          =   walk (tmShiftOnVar d) 
+tmShiftOnVar d          =   \c i -> if i>=c then TmVar (d+i) else TmVar i 
+
+walk onVar c t          = case t of 
+    TmApp t1 t2             -> TmApp (walk onVar c t1) (walk onVar c t2) 
+    TmAbs t                 -> TmAbs (walk onVar (c+1) t) 
+    TmVar i                 -> onVar c i 
+
+
+
+eval ctx t = case eval1 ctx t of 
+    Nothing     -> t 
+    Just t'     -> eval ctx t' 
+     
+
+eval1            :: Context -> Term -> Maybe Term 
+eval1 ctx t         = case t of 
+    TmAbs t'                    -> let Just t'' = eval1 ctx t' in Just $ TmAbs t''
+    TmApp (TmAbs t') t2         -> Just $ tmSubstTop t2 t' 
+    TmApp t1 t2                 -> let Just t1' = eval1 ctx t1 in Just $ TmApp t1' t2 
+    TmVar i                     -> Just $ TmVar i 
+eval1 ctx _         = Nothing 
+
+
+{----------------- Main  ----------------------} 
+
+run     :: String   -> Term
+run     = runParser $ line
+
 
 main    :: IO ()
 main    = forever $ do
-    putStr "Calculator> "
-    a <- getLine
-    print $ eval $ run a
+    putStr "λ >> "; 
+    a <- getLine; 
+    let t = run a ; 
+    print  t ; 
+    print " is evaluated into; " 
+    let e = eval [] t;  
+    print  e 
+
+
+

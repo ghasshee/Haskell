@@ -1,8 +1,8 @@
-module Parser where 
+module Core where 
 
 import Data.Char
 import Control.Monad
-import Control.Applicative 
+import Control.Applicative hiding (some, many) 
 
 
 
@@ -45,7 +45,65 @@ option_parse psr psr' s     =   case parse psr s of
                                 x       -> x
 
 
-{----------------- Lexer --------------------} 
+{------------------ Parser Module --------------------}
+
+--  Chains :: Parser t -> Parser(t->t->t) -> Parser t   
+--  are parsers of e.g.     :  a + b + c + ... + y + z
+--  more precisely; 
+--      infix_chain_left    :  (((a + b) + c) + ... + y) + z 
+--
+--      infix_chain_right   :  a + (b + (c + ... + (y + z)))
+--
+--      prefix_chain_left   :  +(+ ... (+(+ a b) c) ... y) z 
+--             ... 
+
+prefix_chainl1 psr psrop    = do{ 
+        op  <-  psrop; 
+        a   <-  prefix_chainl1 psr psrop; 
+        b   <-  psr; 
+        return (op a b)} <|> psr   
+
+prefix_chainr1 psr psrop    =   do{ 
+        op  <-  psrop; 
+        a   <-  psr; 
+        b   <-  prefix_chainr1 psr psrop; 
+        return (op a b)} <|> psr   
+
+infix_chainl1 psr psrop     =   psr >>= rest psr psrop  
+    where rest psr' psrop a =   do{     
+        op  <-  psrop; 
+        b   <-  psr'; 
+        rest psr' psrop (op a b) } <|> return a                                    
+
+infix_chainr1 psr psrop     =   do{
+        a   <-  psr;
+        op  <-  psrop; 
+        b   <-  infix_chainr1 psr psrop;
+        return (op a b)} <|> psr 
+
+postfix_chainl1 psr psrop   =   psr >>= rest psr psrop
+    where rest psr' psrop a =   do{ 
+        b   <-  psr' ; 
+        op  <-  psrop; 
+        rest psr' psrop (op a b) } <|> return a
+
+postfix_chainr1 psr psrop   =   do{ 
+        a   <-  psr ; 
+        b   <-  postfix_chainr1 psr psrop ;
+        op  <-  psrop ;
+        return (op a b) } <|> psr
+
+
+
+
+sepBy1 p sep    = do { 
+    x   <- p ; 
+    xs  <- list (sep >> p) ; 
+    return (x:xs)   
+    } 
+
+
+{----------------- Lexer Module --------------------} 
 
 type Lexer                  =   Parser Char 
 type Lex                    =   Char 
@@ -54,19 +112,25 @@ type Rest                   =   String
 lexer                       =   Parser lex                          :: Lexer 
     where   lex ""              =   []                                 
             lex (chr:rest)      =   [(chr,rest)]          
+
 filtered p chr              =   if p chr then return chr else empty :: Lexer 
 filtered_lexer p            =   filtered p =<< lexer                :: Lexer 
 oneOf str                   =   filtered_lexer (flip elem str)      :: Lexer 
-(<--) str                   =   oneOf str                           :: Lexer 
-digit_lexer                 =   filtered_lexer  isDigit             :: Lexer 
+digit                       =   filtered_lexer  isDigit             :: Lexer 
 char  c                     =   filtered_lexer (c ==)               :: Lexer 
+letter                      =   filtered_lexer isLetter             :: Lexer 
+
 
 cons psr                    =   fmap (:) psr                   
 list psr                    =   cons psr <*> list psr  <|>  pure[]  :: Parser String 
 nelist psr                  =   cons psr <*> list psr               :: Parser String  
-digits                      =   nelist digit_lexer                  :: Parser String
+(some,many)                 =   (list,nelist)   
+
+
+digits                      =   nelist digit                        :: Parser String
 reserved s                  =   token (string s)                    :: Parser String 
-spaces                      =   list $ (<--) [' ','\n','\r']        :: Parser String 
+space                       =   oneOf " \t\n" 
+spaces                      =   list space                          :: Parser String 
 string  ""                  =   return []                           :: Parser String 
 string (c:cs)               =   do{char c;string cs;return (c:cs)}  :: Parser String 
 uminus                      =   string "-"                          :: Parser String 
@@ -75,65 +139,13 @@ integer                     =   token $ do{
                                     sig <- uminus <|> return[] ; 
                                     num <- digits; 
                                     return $ read $ sig++num }      :: Parser Int 
-digit                       =   read <$> digits                     :: Parser Int 
+uinteger                    =   read <$> digits                     :: Parser Int 
 
 token   psr                 =   do { a<-psr; spaces; return a}
 parens  psr                 =   do { reserved"("; spaces; a<-psr; spaces; reserved")"; return a }
 
 
+initletter                  =   letter <|> oneOf "_"
+tailletter                  =   list ( digit <|> initletter )         
+ident                       =   do{ i <- initletter; t <- tailletter; return (i:t) }  :: Parser String 
 
-{------------------ Syntax --------------------} 
-
-data Expr   = Add Expr Expr
-            | Mul Expr Expr
-            | Sub Expr Expr
-            | Int Int           deriving Show
-
-
-
-
-{------------------ Eval  --------------------} 
-
-eval        :: Expr -> Int
-eval ex     = case ex of 
-    Add a b     -> eval a + eval b
-    Mul a b     -> eval a * eval b
-    Sub a b     -> eval a - eval b
-    Int n       -> n
-
-
-
-{------------------ Parser --------------------}
-
-
-chainl1             ::  Parser a -> Parser (a -> a -> a) -> Parser a 
-p `chainl1` op      =   do 
-    a <- p
-    rest p op a  where 
-        rest pa pop a   =   do { op <- pop; b <- pa; rest pa pop (op a b) } <|> return a
-(%%) = chainl1 
-
-
-expr            =   term   %% addop                     :: Parser Expr 
-term            =   factor %% mulop                     :: Parser Expr 
-factor          =   int 
-                <|> parens expr                         :: Parser Expr 
-int             =   return . Int =<< integer            :: Parser Expr 
-
-infixOp x f     =   reserved x >> return f              :: Parser(Expr->Expr->Expr) 
-addop           =   infixOp "+" Add 
-                <|> infixOp "-" Sub                     :: Parser(Expr->Expr->Expr) 
-mulop           =   infixOp "*" Mul                     :: Parser(Expr->Expr->Expr) 
-
-
-{----------------- Main  ----------------------} 
-
-run     :: String   -> Expr
-run     = runParser expr
-
-
-main    :: IO ()
-main    = forever $ do
-    putStr "Haskell Calculator >>> "
-    a <- getLine
-    print $ eval $ run a
