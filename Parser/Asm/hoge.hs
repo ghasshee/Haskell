@@ -1,11 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-unused-binds -fno-warn-missing-signatures #-}
 {-# LANGUAGE CPP #-}
-{-# LINE 1 "Lexer.x" #-}
+{-# LINE 1 "hoge.x" #-}
  
-module Lexer (Token(..), P, evalP, lexer) where 
-import Control.Monad.State
-import Control.Monad.Error
-import Data.Word
+    module Main(main) where 
 
 #if __GLASGOW_HASKELL__ >= 603
 #include "ghcconfig.h"
@@ -14,98 +11,542 @@ import Data.Word
 #endif
 #if __GLASGOW_HASKELL__ >= 503
 import Data.Array
+import Data.Array.Base (unsafeAt)
 #else
 import Array
 #endif
+{-# LINE 1 "templates/wrappers.hs" #-}
+-- -----------------------------------------------------------------------------
+-- Alex wrapper code.
+--
+-- This code is in the PUBLIC DOMAIN; you may copy it freely and use
+-- it for any purpose whatsoever.
+
+
+
+
+
+
+import Data.Word (Word8)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import Data.Char (ord)
+import qualified Data.Bits
+
+-- | Encode a Haskell String to a list of Word8 values, in UTF8 format.
+utf8Encode :: Char -> [Word8]
+utf8Encode = map fromIntegral . go . ord
+ where
+  go oc
+   | oc <= 0x7f       = [oc]
+
+   | oc <= 0x7ff      = [ 0xc0 + (oc `Data.Bits.shiftR` 6)
+                        , 0x80 + oc Data.Bits..&. 0x3f
+                        ]
+
+   | oc <= 0xffff     = [ 0xe0 + (oc `Data.Bits.shiftR` 12)
+                        , 0x80 + ((oc `Data.Bits.shiftR` 6) Data.Bits..&. 0x3f)
+                        , 0x80 + oc Data.Bits..&. 0x3f
+                        ]
+   | otherwise        = [ 0xf0 + (oc `Data.Bits.shiftR` 18)
+                        , 0x80 + ((oc `Data.Bits.shiftR` 12) Data.Bits..&. 0x3f)
+                        , 0x80 + ((oc `Data.Bits.shiftR` 6) Data.Bits..&. 0x3f)
+                        , 0x80 + oc Data.Bits..&. 0x3f
+                        ]
+
+
+
+type Byte = Word8
+
+-- -----------------------------------------------------------------------------
+-- The input type
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- -----------------------------------------------------------------------------
+-- Token positions
+
+-- `Posn' records the location of a token in the input text.  It has three
+-- fields: the address (number of chacaters preceding the token), line number
+-- and column of a token within the file. `start_pos' gives the position of the
+-- start of the file and `eof_pos' a standard encoding for the end of file.
+-- `move_pos' calculates the new position after traversing a given character,
+-- assuming the usual eight character tab stops.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- -----------------------------------------------------------------------------
+-- Default monad
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- -----------------------------------------------------------------------------
+-- Monad (with ByteString input)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- -----------------------------------------------------------------------------
+-- Basic wrapper
+
+
+type AlexInput = (Char,[Byte],String)
+
+alexInputPrevChar :: AlexInput -> Char
+alexInputPrevChar (c,_,_) = c
+
+-- alexScanTokens :: String -> [token]
+alexScanTokens str = go ('\n',[],str)
+  where go inp__@(_,_bs,s) =
+          case alexScan inp__ 0 of
+                AlexEOF -> []
+                AlexError _ -> error "lexical error"
+                AlexSkip  inp__' _ln     -> go inp__'
+                AlexToken inp__' len act -> act (take len s) : go inp__'
+
+alexGetByte :: AlexInput -> Maybe (Byte,AlexInput)
+alexGetByte (c,(b:bs),s) = Just (b,(c,bs,s))
+alexGetByte (_,[],[])    = Nothing
+alexGetByte (_,[],(c:s)) = case utf8Encode c of
+                             (b:bs) -> Just (b, (c, bs, s))
+                             [] -> Nothing
+
+
+
+-- -----------------------------------------------------------------------------
+-- Basic wrapper, ByteString version
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- -----------------------------------------------------------------------------
+-- Posn wrapper
+
+-- Adds text positions to the basic model.
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- -----------------------------------------------------------------------------
+-- Posn wrapper, ByteString version
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- -----------------------------------------------------------------------------
+-- GScan wrapper
+
+-- For compatibility with previous versions of Alex, and because we can.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 alex_tab_size :: Int
 alex_tab_size = 8
 alex_base :: Array Int Int
-alex_base = listArray (0 :: Int, 33)
+alex_base = listArray (0 :: Int, 5)
   [ -8
   , -95
-  , -94
-  , -91
-  , -92
-  , -101
+  , -110
   , -106
-  , -103
-  , -86
-  , -87
-  , -85
-  , -100
-  , -99
-  , -84
-  , -78
-  , -102
-  , -83
-  , -93
-  , -82
-  , -81
-  , -80
-  , -88
-  , -74
-  , -73
-  , 26
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
-  , 0
+  , 1
   , 0
   ]
 
 alex_table :: Array Int Int
-alex_table = listArray (0 :: Int, 281)
+alex_table = listArray (0 :: Int, 256)
   [ 0
-  , 24
-  , 24
-  , 24
-  , 24
-  , 24
-  , 25
-  , 26
-  , 28
-  , 32
-  , 33
+  , 4
+  , 4
+  , 4
+  , 4
+  , 4
+  , 5
   , 1
   , 2
-  , 3
-  , 23
+  , 0
   , 4
-  , 21
-  , 20
-  , 8
-  , 18
-  , 13
-  , 9
-  , 31
-  , 10
-  , 24
-  , 11
-  , 7
-  , 29
-  , 30
+  , 4
+  , 4
+  , 4
+  , 4
   , 0
   , 0
   , 0
   , 0
-  , 6
-  , 5
-  , 24
-  , 24
-  , 24
-  , 24
-  , 24
-  , 27
-  , 15
   , 0
   , 0
   , 0
   , 0
   , 0
+  , 4
   , 0
   , 0
   , 0
@@ -114,10 +555,10 @@ alex_table = listArray (0 :: Int, 281)
   , 0
   , 0
   , 0
+  , 4
   , 0
   , 0
   , 0
-  , 24
   , 0
   , 0
   , 0
@@ -152,22 +593,16 @@ alex_table = listArray (0 :: Int, 281)
   , 0
   , 0
   , 0
-  , 16
-  , 14
   , 0
   , 0
-  , 22
   , 0
   , 0
   , 0
   , 0
   , 0
   , 0
-  , 17
   , 0
   , 0
-  , 12
-  , 19
   , 0
   , 0
   , 0
@@ -193,6 +628,9 @@ alex_table = listArray (0 :: Int, 281)
   , 0
   , 0
   , 0
+  , 0
+  , 0
+  , 3
   , 0
   , 0
   , 0
@@ -344,7 +782,7 @@ alex_table = listArray (0 :: Int, 281)
   ]
 
 alex_check :: Array Int Int
-alex_check = listArray (0 :: Int, 281)
+alex_check = listArray (0 :: Int, 256)
   [ -1
   , 9
   , 10
@@ -352,41 +790,14 @@ alex_check = listArray (0 :: Int, 281)
   , 12
   , 13
   , 101
-  , 101
-  , 99
-  , 101
-  , 111
   , 117
-  , 115
-  , 99
-  , 101
-  , 115
-  , 101
-  , 101
-  , 117
-  , 97
-  , 122
   , 114
-  , 110
-  , 104
-  , 32
-  , 108
-  , 108
-  , 100
-  , 102
   , -1
-  , -1
-  , -1
-  , -1
-  , 114
-  , 114
   , 9
   , 10
   , 11
   , 12
   , 13
-  , 48
-  , 115
   , -1
   , -1
   , -1
@@ -395,6 +806,8 @@ alex_check = listArray (0 :: Int, 281)
   , -1
   , -1
   , -1
+  , -1
+  , 32
   , -1
   , -1
   , -1
@@ -438,47 +851,47 @@ alex_check = listArray (0 :: Int, 281)
   , -1
   , -1
   , -1
-  , 101
-  , 102
-  , -1
-  , -1
-  , 105
   , -1
   , -1
   , -1
   , -1
   , -1
   , -1
-  , 112
   , -1
   , -1
-  , 115
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
+  , -1
   , 116
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
   , -1
   , -1
   , -1
@@ -630,141 +1043,29 @@ alex_check = listArray (0 :: Int, 281)
   ]
 
 alex_deflt :: Array Int Int
-alex_deflt = listArray (0 :: Int, 33)
+alex_deflt = listArray (0 :: Int, 5)
   [ -1
   , -1
   , -1
   , -1
   , -1
   , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
-  , -1
   ]
 
-alex_accept = listArray (0 :: Int, 33)
+alex_accept = listArray (0 :: Int, 5)
   [ AlexAccNone
   , AlexAccNone
   , AlexAccNone
   , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
-  , AlexAccNone
   , AlexAccSkip
-  , AlexAcc 8
-  , AlexAcc 7
-  , AlexAcc 6
-  , AlexAcc 5
-  , AlexAcc 4
-  , AlexAcc 3
-  , AlexAcc 2
-  , AlexAcc 1
   , AlexAcc 0
   ]
 
-alex_actions = array (0 :: Int, 9)
-  [ (8,alex_action_1)
-  , (7,alex_action_2)
-  , (6,alex_action_3)
-  , (5,alex_action_4)
-  , (4,alex_action_5)
-  , (3,alex_action_6)
-  , (2,alex_action_7)
-  , (1,alex_action_8)
-  , (0,alex_action_9)
+alex_actions = array (0 :: Int, 1)
+  [ (0,alex_action_1)
   ]
 
-{-# LINE 22 "Lexer.x" #-}
-
-data Token  =   TTrue
-                |   TFalse
-                |   TZero
-                |   TSucc
-                |   TPred
-                |   TIf
-                |   TThen
-                |   TElse
-                |   TIsZero 
-                |   TEOF
-                deriving (Eq,Show)
-
-type AlexInput = [Word8] 
-alexGetByte :: AlexInput -> Maybe (Word8, AlexInput)
-alexGetByte (b:bs)  = Just (b,bs)
-alexGetByte []      = Nothing
-
-alexInputPrevChar :: AlexInput -> Char
-alexInputPrevChar   = undefined 
-
-type P a    = StateT AlexInput (Either String) a 
-
-evalP :: P a -> AlexInput -> Either String a 
-evalP       = evalStateT
-
-readToken :: P Token
-readToken = do 
-    s <- get 
-    case alexScan s 0 of 
-        AlexEOF                 -> return TEOF
-        AlexError _             -> throwError "!Lexical Error" 
-        AlexSkip input _        -> do { put input; readToken } 
-        AlexToken input _ tk    -> do { put input; return tk }
-
-lexer :: (Token -> P a) -> P a
-lexer cont = readToken >>= cont
-
-
 alex_action_1 = TTrue
-alex_action_2 = TFalse
-alex_action_3 = TZero
-alex_action_4 = TSucc
-alex_action_5 = TPred
-alex_action_6 = TIf
-alex_action_7 = TThen
-alex_action_8 = TElse
-alex_action_9 = TIsZero
 {-# LINE 1 "templates/GenericTemplate.hs" #-}
 -- -----------------------------------------------------------------------------
 -- ALEX TEMPLATE

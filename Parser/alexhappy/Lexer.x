@@ -1,8 +1,8 @@
 { 
-    module Lexer (Token(..), P, evalP, lexer) where 
-    import Control.Monad.State
-    import Control.Monad.Error
-    import Data.Word
+module Lexer (Token(..), P, evalP, lexer) where 
+import Control.Monad.State
+import Control.Monad.Error
+import Data.Word
 } 
 
 
@@ -20,7 +20,7 @@ tokens :-
     iszero      {TIsZero}
 
 {
-    data Token  =   TTrue
+data Token  =   TTrue
                 |   TFalse
                 |   TZero
                 |   TSucc
@@ -29,31 +29,32 @@ tokens :-
                 |   TThen
                 |   TElse
                 |   TIsZero 
+                |   TEOF
                 deriving (Eq,Show)
 
-    type AlexInput = [Word8] 
-    alexGetByte :: AlexInput -> Maybe (Word8, AlexInput)
-    alexGetByte (b:bs)  = Just (b,bs)
-    alexGetByte []      = Nothing
+type AlexInput = [Word8] 
+alexGetByte :: AlexInput -> Maybe (Word8, AlexInput)
+alexGetByte (b:bs)  = Just (b,bs)
+alexGetByte []      = Nothing
 
-    alexInputPrevChar :: AlexInput -> Char
-    alexInputPrevChar   = undefined 
+alexInputPrevChar :: AlexInput -> Char
+alexInputPrevChar   = undefined 
 
-    type P a    = StateT AlexInput (Either String) a 
-    
-    evalP :: P a -> AlexInput -> Either String a 
-    evalP       = evalStateT
+type P a    = StateT AlexInput (Either String) a 
 
-    readToken :: P Token
-    readToken = do 
-        s <- get 
-        case alexScan s 0 of 
-            AlexEOF                 -> return TEOF
-            AlexError _             -> throwError "!Lexical Error" 
-            AlexSkip input _        -> do { put input; readToken } 
-            AlexToken input _ tk    -> do { put input; return tk }
+evalP :: P a -> AlexInput -> Either String a 
+evalP       = evalStateT
 
-    lexer :: (Token -> P a) -> P a
-    lexer cont = readToken >>= cont
+readToken :: P Token
+readToken = do 
+    s <- get 
+    case alexScan s 0 of 
+        AlexEOF                 -> return TEOF
+        AlexError _             -> throwError "!Lexical Error" 
+        AlexSkip input _        -> do { put input; readToken } 
+        AlexToken input _ tk    -> do { put input; return tk }
+
+lexer :: (Token -> P a) -> P a
+lexer cont = readToken >>= cont
 
 }

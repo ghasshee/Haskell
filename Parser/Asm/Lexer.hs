@@ -2,10 +2,12 @@
 {-# LANGUAGE CPP #-}
 {-# LINE 1 "Lexer.x" #-}
  
-module Lexer (Token(..), P, evalP, lexer) where 
-import Control.Monad.State
-import Control.Monad.Error
-import Data.Word
+    module Lexer (Token(..), P, evalP, lexer) where 
+    import Control.Monad.State
+    import Control.Monad.Error
+    import Data.Word
+
+    import Syntax
 
 #if __GLASGOW_HASKELL__ >= 603
 #include "ghcconfig.h"
@@ -20,7 +22,7 @@ import Array
 alex_tab_size :: Int
 alex_tab_size = 8
 alex_base :: Array Int Int
-alex_base = listArray (0 :: Int, 33)
+alex_base = listArray (0 :: Int, 35)
   [ -8
   , -95
   , -94
@@ -42,9 +44,11 @@ alex_base = listArray (0 :: Int, 33)
   , -82
   , -81
   , -80
-  , -88
-  , -74
-  , -73
+  , -114
+  , -79
+  , -75
+  , -72
+  , -98
   , 26
   , 0
   , 0
@@ -60,46 +64,45 @@ alex_base = listArray (0 :: Int, 33)
 alex_table :: Array Int Int
 alex_table = listArray (0 :: Int, 281)
   [ 0
-  , 24
-  , 24
-  , 24
-  , 24
-  , 24
-  , 25
   , 26
+  , 26
+  , 26
+  , 26
+  , 26
+  , 27
   , 28
-  , 32
-  , 33
+  , 30
+  , 34
+  , 35
   , 1
   , 2
   , 3
-  , 23
+  , 24
   , 4
-  , 21
+  , 22
   , 20
   , 8
   , 18
   , 13
   , 9
-  , 31
+  , 25
   , 10
-  , 24
+  , 26
   , 11
   , 7
+  , 32
+  , 31
+  , 0
   , 29
-  , 30
-  , 0
-  , 0
-  , 0
+  , 33
   , 0
   , 6
   , 5
-  , 24
-  , 24
-  , 24
-  , 24
-  , 24
-  , 27
+  , 26
+  , 26
+  , 26
+  , 26
+  , 26
   , 15
   , 0
   , 0
@@ -117,7 +120,8 @@ alex_table = listArray (0 :: Int, 281)
   , 0
   , 0
   , 0
-  , 24
+  , 0
+  , 26
   , 0
   , 0
   , 0
@@ -156,7 +160,7 @@ alex_table = listArray (0 :: Int, 281)
   , 14
   , 0
   , 0
-  , 22
+  , 23
   , 0
   , 0
   , 0
@@ -277,7 +281,7 @@ alex_table = listArray (0 :: Int, 281)
   , 0
   , 0
   , 0
-  , 0
+  , 21
   , 0
   , 0
   , 0
@@ -367,16 +371,16 @@ alex_check = listArray (0 :: Int, 281)
   , 97
   , 122
   , 114
-  , 110
+  , 136
   , 104
   , 32
   , 108
   , 108
-  , 100
   , 102
+  , 100
   , -1
-  , -1
-  , -1
+  , 128
+  , 110
   , -1
   , 114
   , 114
@@ -385,8 +389,8 @@ alex_check = listArray (0 :: Int, 281)
   , 11
   , 12
   , 13
-  , 48
   , 115
+  , -1
   , -1
   , -1
   , -1
@@ -563,7 +567,7 @@ alex_check = listArray (0 :: Int, 281)
   , -1
   , -1
   , -1
-  , -1
+  , 226
   , -1
   , -1
   , -1
@@ -630,8 +634,10 @@ alex_check = listArray (0 :: Int, 281)
   ]
 
 alex_deflt :: Array Int Int
-alex_deflt = listArray (0 :: Int, 33)
+alex_deflt = listArray (0 :: Int, 35)
   [ -1
+  , -1
+  , -1
   , -1
   , -1
   , -1
@@ -667,8 +673,10 @@ alex_deflt = listArray (0 :: Int, 33)
   , -1
   ]
 
-alex_accept = listArray (0 :: Int, 33)
+alex_accept = listArray (0 :: Int, 35)
   [ AlexAccNone
+  , AlexAccNone
+  , AlexAccNone
   , AlexAccNone
   , AlexAccNone
   , AlexAccNone
@@ -716,50 +724,39 @@ alex_actions = array (0 :: Int, 9)
   , (0,alex_action_9)
   ]
 
-{-# LINE 22 "Lexer.x" #-}
+{-# LINE 32 "Lexer.x" #-}
 
-data Token  =   TTrue
-                |   TFalse
-                |   TZero
-                |   TSucc
-                |   TPred
-                |   TIf
-                |   TThen
-                |   TElse
-                |   TIsZero 
-                |   TEOF
-                deriving (Eq,Show)
 
-type AlexInput = [Word8] 
-alexGetByte :: AlexInput -> Maybe (Word8, AlexInput)
-alexGetByte (b:bs)  = Just (b,bs)
-alexGetByte []      = Nothing
+    type AlexInput = [Word8] 
+    alexGetByte :: AlexInput -> Maybe (Word8, AlexInput)
+    alexGetByte (b:bs)  = Just (b,bs)
+    alexGetByte []      = Nothing
 
-alexInputPrevChar :: AlexInput -> Char
-alexInputPrevChar   = undefined 
+    alexInputPrevChar :: AlexInput -> Char
+    alexInputPrevChar   = undefined 
 
-type P a    = StateT AlexInput (Either String) a 
+    type P a    = StateT AlexInput (Either String) a 
+    
+    evalP :: P a -> AlexInput -> Either String a 
+    evalP       = evalStateT
 
-evalP :: P a -> AlexInput -> Either String a 
-evalP       = evalStateT
+    readToken :: P Token
+    readToken = do 
+        s <- get 
+        case alexScan s 0 of 
+            AlexEOF                 -> return TEOF
+            AlexError _             -> throwError "!Lexical Error" 
+            AlexSkip input _        -> do { put input; readToken } 
+            AlexToken input _ tk    -> do { put input; return tk }
 
-readToken :: P Token
-readToken = do 
-    s <- get 
-    case alexScan s 0 of 
-        AlexEOF                 -> return TEOF
-        AlexError _             -> throwError "!Lexical Error" 
-        AlexSkip input _        -> do { put input; readToken } 
-        AlexToken input _ tk    -> do { put input; return tk }
-
-lexer :: (Token -> P a) -> P a
-lexer cont = readToken >>= cont
+    lexer :: (Token -> P a) -> P a
+    lexer cont = readToken >>= cont
 
 
 alex_action_1 = TTrue
 alex_action_2 = TFalse
-alex_action_3 = TZero
-alex_action_4 = TSucc
+alex_action_3 = TZero 0 
+alex_action_4 = \s -> succ 
 alex_action_5 = TPred
 alex_action_6 = TIf
 alex_action_7 = TThen
