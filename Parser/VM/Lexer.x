@@ -9,11 +9,13 @@ import System.IO (isEOF)
 
 $digit  = 0-9
 $alpha  = [a-zA-Z] 
-@str    = $alpha [$alpha $digit \_ \' ]*  
+@str    = $alpha [$alpha $digit \_ \' \. ]*  
+@space  = [\  \t \n]+
 
 tokens :-
     $white+     ;
     "//".*      ;   
+    @space      ; 
     "push"      { \s -> PUSH                                                    }
     "pop"       { \s -> POP                                                     }
     "argument"  { \s -> ARG                                                     }
@@ -38,7 +40,7 @@ tokens :-
     "if-goto"   { \s -> IFGOTO                                                  }
     "function"  { \s -> FUN                                                     }
     "call"      { \s -> CALL                                                    }
-    "return"    { \s -> RETURN                                                  }
+    "return"    { \s -> RET                                                     }
     $digit+     { \s -> INT (read s)                                            } 
     @str        { \s -> STRING s                                                } 
 
@@ -47,7 +49,7 @@ tokens :-
 data Token  = PUSH | POP 
             | ARG | LOCAL | STATIC | CONST | THIS | THAT | POINTER | TEMP
             | ADD | SUB | NEG | EQ | GT | LT | AND | OR | NOT 
-            | LABEL | GOTO | IFGOTO | FUN | CALL | RETURN 
+            | LABEL | GOTO | IFGOTO | FUN | CALL | RET 
             | INT Int | STRING String  deriving (Eq, Show) 
 
 

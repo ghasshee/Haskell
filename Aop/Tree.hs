@@ -4,7 +4,7 @@ import GHC.Base (liftA2)
 import Data.Char
 import Aop.List
 import Aop.Int
-
+import Comonad.Comonad
 
 -------------------
 --- BINARY TREE ---
@@ -215,9 +215,21 @@ tt =
         Cons(Fork (2,Nil),
         Cons(Fork (3,Nil),Nil))))
 
+instance Functor Listr where 
+    fmap f Nil              = Nil 
+    fmap f (Cons(x,xs))     = Cons(f x,fmap f xs)
 
+instance Functor Tree where 
+    fmap f (Fork(a,Nil))        = Fork(f a,Nil) 
+    fmap f (Fork(a,Cons(x,xs))) = Fork(f a,Cons(fmap f x,fmap (fmap f) xs))
 
+instance Comonad Tree where 
+    extract (Fork(a,Nil))                 = a 
+    extract (Fork(a,Cons(x,xs)))          = a
+    extend treeB2A (Fork(b,Nil))        = Fork(treeB2A (Fork(b,Nil)),Nil) 
+    extend treeB2A (Fork(b,Cons(x,xs))) = Fork(treeB2A (Fork(b,Cons(x,xs))),fmap(extend treeB2A)(Cons(x,xs)))
 
+sum_tree = foldt (+) (+) 0 0 
 
 
 -------------------------------

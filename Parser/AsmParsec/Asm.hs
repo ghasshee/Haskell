@@ -9,18 +9,18 @@ import Prelude hiding (abs,lookup, head,tail )
 import Data.Char
 import Control.Monad
 import Control.Applicative hiding (some,many) 
-import Core hiding (parse) 
+import Core 
 
-import Data.Attoparsec.Text (parse) 
+-- import Data.Attoparsec.Text (parse) 
 
 
 
 import qualified Data.HashTable.IO as H 
 import Data.Bits 
-import qualified Data.Text as T 
-import qualified Data.Text.IO as TIO 
+-- import qualified Data.Text as T 
+-- import qualified Data.Text.IO as TIO 
 import Numeric (showIntAtBase) 
-import Text.Printf 
+-- import Text.Printf 
 import System.IO
 import System.Directory (renameFile, getTemporaryDirectory) 
 import System.Environment (getArgs) 
@@ -226,13 +226,13 @@ asm_jump j = case j of
 shiftL' :: Int -> Int -> Int 
 shiftL' = shift 
 
-asm_cmd :: Command -> T.Text
+-- asm_cmd :: Command -> T.Text
 asm_cmd cmd = case cmd of 
-    A_ (ADDR a)         -> T.pack $ str_of_bin a 
+    A_ (ADDR a)         -> str_of_bin a 
     -- A_ (VAR k)          -> do { Just v <- lookup tbl k ; return $ T.pack $ str_of_bin v ++ "\n" }   
-    C_ d c j            -> T.pack $ ( str_of_bin 
+    C_ d c j            -> ( str_of_bin 
             $ asm_jump j + shiftL' ((+)(asm_comp c)(shiftL((+)(shiftL 0b111 3)(asm_dest d))7))3) 
-    L_ _                -> T.pack ""
+    L_ _                -> ""
 
 
 -- str_of_bin b = printf "%016s" $ showIntAtBase 2 intToDigit b ""  :: String 
@@ -271,12 +271,12 @@ main    = do
     -- (tempName,tempHandle) <- openTempFile "." "temp" 
     -- tmpDir      <- getTemporaryDirectory 
     -- let tmpFile = tmpDir ++ "/" ++ filename 
-    lines        <- T.lines <$> TIO.readFile filename  
+    lines        <- (\str -> split '\n' str =<< readFile filename  
     -- let cmds    = run file
     -- let cmds    = map (run_ . T.unpack ) lines 
     let cmds = map_run lines 
     putStrLn "cmds are created" 
-    TIO.writeFile outFile $ T.unlines $ map asm_cmd cmds  
+    writeFile outFile $ concat $ map asm_cmd cmds  
     -- hoge handle cmds 
 
 {--

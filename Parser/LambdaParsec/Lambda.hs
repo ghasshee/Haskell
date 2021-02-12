@@ -5,6 +5,7 @@ import Data.Char
 import Control.Monad
 import Control.Applicative hiding (some,many) 
 import Core 
+import System.IO (hFlush, stdout) 
 
 
 {------------------ Syntax --------------------} 
@@ -91,13 +92,14 @@ run     = runParser $ line
 
 main    :: IO ()
 main    = forever $ do
-    putStr "λ >> "; 
+    putStr "λ >> "
+    hFlush stdout
     a <- getLine; 
     let t = run a ; 
-    print  t ; 
-    print " is evaluated into; " 
+    putStrLn $ show  t  
+    putStrLn " ---------- evaluation ----------- " 
     let e = eval [] t;  
-    print  e 
+    putStrLn $ show e 
 
 
 
