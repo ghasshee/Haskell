@@ -2,6 +2,7 @@ module Aop.Tree where
 
 import GHC.Base (liftA2) 
 import Data.Char
+
 import Aop.List
 import Aop.Int
 import Comonad.Comonad
@@ -19,15 +20,18 @@ import Comonad.Comonad
 --   1   4
 
 data BTree a'      = Lf  | Br (a', BTree a', BTree a')
-instance Show a' => Show (BTree a') where show t = showRight "" t
-showLeft  str Lf          = ""
-showLeft  str (Br(a,l,r)) = str ++ "+- " ++ show a ++ "\n" ++ 
-                              showLeft (str ++ "|  ") l ++
-                              showRight (str ++ "|  ") r
-showRight  str Lf          = ""
-showRight  str (Br(a,l,r)) = str ++ "+- " ++ show a ++ "\n" ++ 
-                              showLeft (str ++ "   ") l ++
-                              showRight (str ++ "   ") r
+
+instance Show a' => Show (BTree a') where 
+    show t = showRight "" t
+        where 
+        showLeft  str Lf          = ""
+        showLeft  str (Br(a,l,r)) = str ++ "+- " ++ show a ++ "\n" ++ 
+                                    showLeft (str ++ "|  ") l ++
+                                    showRight (str ++ "|  ") r
+        showRight str Lf          = ""
+        showRight str (Br(a,l,r)) = str ++ "+- " ++ show a ++ "\n" ++ 
+                                    showLeft (str ++ "   ") l ++
+                                    showRight (str ++ "   ") r
 
 lf          = Lf
 br a x y    = Br(a,x,y)
@@ -230,6 +234,55 @@ instance Comonad Tree where
     extend treeB2A (Fork(b,Cons(x,xs))) = Fork(treeB2A (Fork(b,Cons(x,xs))),fmap(extend treeB2A)(Cons(x,xs)))
 
 sum_tree = foldt (+) (+) 0 0 
+
+
+-- Try: 
+-- >>> extend sum_tree tt 
+
+
+
+
+----------------
+-- Simple Lambda Calculus
+------------------
+
+data Tm = TmPlus    -- nonterminal 
+        | TmMult
+        | TmInt Int -- terminal 
+        deriving Show 
+
+
+tmPlus a b = Fork(TmPlus,Cons(a,Cons(b,Nil)))
+tmMult a b = Fork(TmMult,Cons(a,Cons(b,Nil)))
+tmInt a    = Fork(TmInt a,Nil) 
+
+
+eval1 (Fork(TmInt a,Nil))               = TmInt a 
+eval1 (Fork(tm,Cons(a,Cons(b,Nil))))    = getOp tm (eval1 a) (eval1 b) 
+
+getOp TmPlus = (+++)
+getOp TmMult = (***)
+
+(+++) (TmInt a)(TmInt b) = TmInt $ a + b
+-- (+++) _ a = a 
+(***) (TmInt a)(TmInt b) = TmInt $ a * b  
+
+-- eval = foldt (+++) (+++) (TmInt 0) (TmInt 0) 
+
+
+-- e.g. 
+
+eg1 = tmMult(tmPlus(tmInt 4)(tmInt 7))(tmMult(tmPlus(tmInt 8)(tmInt 3))(tmInt 9))
+
+-- Try : 
+-- >>> extend eval1 eg1 
+
+
+
+
+
+
+
 
 
 -------------------------------

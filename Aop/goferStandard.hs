@@ -1,7 +1,24 @@
+{-# LANGUAGE NoImplicitPrelude #-} 
+
+import Prelude (IO,Char,String,Int,Float,Bool(..),div,quot,error) 
+import Data.Char (ord,chr) 
+
+type Dialogue = IO ()
+
+data IOError  = SearchError String 
+            | ReadError String 
+            | WriteError String 
+            | FormatError String 
+            | OtherError String 
+            | Failure String
+            | Success
+            | StrList 
+            | Str
+
 --
 --  NOTE THAT : 
 --  - THIS CODE DO NOT WORK IMMEDIATELY ON HASKELL 
---  - FOR STUDYING PRIMITIVE HASKELL
+--  - FOR STUDYING --primitive HASKELL
 --
 --         __________   __________   __________   __________   ________
 --        /  _______/  /  ____   /  /  _______/  /  _______/  /  ____  \
@@ -18,16 +35,17 @@
 
 help = "press :? for a list of commands"
 
+
 -- Operator precedence table: -----------------------------------------------
 
 infixl 9 !!
 infixr 9 .
 infixr 8 ^
 infixl 7 *
-infix  7 /, `div`, `quot`, `rem`, `mod`
+--infix  7 /, `div`, `quot`, `rem`, `mod`
 infixl 6 +, -
 infix  5 \\
-infixr 5 ++, :
+--infixr 5 ++, :
 infix  4 ==, /=, <, <=, >=, >
 infix  4 `elem`, `notElem`
 infixr 3 &&
@@ -36,7 +54,7 @@ infixr 0 $
 
 -- Standard combinators: ----------------------------------------------------
 
-primitive strict "primStrict" :: (a -> b) -> a -> b
+--primitive strict "primStrict" :: (a -> b) -> a -> b
 
 const          :: a -> b -> a
 const k x       = k
@@ -82,8 +100,8 @@ otherwise       = True
 
 -- Character functions: -----------------------------------------------------
 
-primitive ord "primCharToInt" :: Char -> Int
-primitive chr "primIntToChar" :: Int -> Char
+--primitive ord "primCharToInt" :: Char -> Int
+--primitive chr "primIntToChar" :: Int -> Char
 
 isAscii, isControl, isPrint, isSpace            :: Char -> Bool
 isUpper, isLower, isAlpha, isDigit, isAlphanum  :: Char -> Bool
@@ -149,14 +167,15 @@ class (Eq a, Text a) => Num a where         -- simplified numeric class
     fromInteger	       :: Int -> a
 
 -- Type class instances: ----------------------------------------------------
-
-primitive primEqInt    "primEqInt",
+{--
+--primitive primEqInt    "primEqInt",
 	  primLeInt    "primLeInt"   :: Int -> Int -> Bool
-primitive primPlusInt  "primPlusInt",
+--primitive primPlusInt  "primPlusInt",
 	  primMinusInt "primMinusInt",
 	  primDivInt   "primDivInt",
 	  primMulInt   "primMulInt"  :: Int -> Int -> Int
-primitive primNegInt   "primNegInt"  :: Int -> Int
+--primitive primNegInt   "primNegInt"  :: Int -> Int
+--}
 
 instance Eq ()  where () == () = True
 instance Ord () where () <= () = True
@@ -181,17 +200,17 @@ instance Num Int where
     (/)           = primDivInt
     negate        = primNegInt
     fromInteger x = x
-
+{--
 {- PC version off -}
-primitive primEqFloat    "primEqFloat",
+--primitive primEqFloat    "primEqFloat",
           primLeFloat    "primLeFloat"    :: Float -> Float -> Bool
-primitive primPlusFloat  "primPlusFloat", 
+--primitive primPlusFloat  "primPlusFloat", 
           primMinusFloat "primMinusFloat", 
           primDivFloat   "primDivFloat",
           primMulFloat   "primMulFloat"   :: Float -> Float -> Float 
-primitive primNegFloat   "primNegFloat"   :: Float -> Float
-primitive primIntToFloat "primIntToFloat" :: Int -> Float
-
+--primitive primNegFloat   "primNegFloat"   :: Float -> Float
+--primitive primIntToFloat "primIntToFloat" :: Int -> Float
+--}
 instance Eq Float where (==) = primEqFloat
 instance Ord Float where (<=) = primLeFloat
 instance Enum Float where
@@ -205,22 +224,23 @@ instance Num Float where
     (/)         = primDivFloat 
     negate      = primNegFloat
     fromInteger = primIntToFloat
-
-primitive sin "primSinFloat",  asin  "primAsinFloat",
+{--
+--primitive sin "primSinFloat",  asin  "primAsinFloat",
           cos "primCosFloat",  acos  "primAcosFloat",
 	  tan "primTanFloat",  atan  "primAtanFloat",
           log "primLogFloat",  log10 "primLog10Float",
 	  exp "primExpFloat",  sqrt  "primSqrtFloat" :: Float -> Float
-primitive atan2    "primAtan2Float" :: Float -> Float -> Float
-primitive truncate "primFloatToInt" :: Float -> Int
-
+--primitive atan2    "primAtan2Float" :: Float -> Float -> Float
+--primitive truncate "primFloatToInt" :: Float -> Int
+--}
+--
 pi :: Float
 pi  = 3.1415926535
 
 {- PC version on -}
 
-primitive primEqChar   "primEqChar",
-	  primLeChar   "primLeChar"  :: Char -> Char -> Bool
+--primitive primEqChar   "primEqChar",
+--	  primLeChar   "primLeChar"  :: Char -> Char -> Bool
 
 instance Eq Char  where (==) = primEqChar   -- c == d  =  ord c == ord d
 instance Ord Char where (<=) = primLeChar   -- c <= d  =  ord c <= ord d
@@ -263,12 +283,12 @@ instance Ord Bool where
     True  <= x      = x
 
 -- Standard numerical functions: --------------------------------------------
-
-primitive div    "primDivInt",
+{--
+--primitive div    "primDivInt",
           quot   "primQuotInt",
           rem    "primRemInt",
           mod    "primModInt"    :: Int -> Int -> Int
-
+--}
 subtract  :: Num a => a -> a -> a
 subtract   = flip (-)
 
@@ -288,7 +308,7 @@ lcm x y    = abs ((x `quot` gcd x y) * y)
 
 (^)       :: Num a => a -> Int -> a
 x ^ 0      = fromInteger 1
-x ^ (n+1)  = f x n x
+x ^ n       = f x (n-1) x
              where f _ 0 y = y
                    f x n y = g x n where
                              g x n | even n    = g (x*x) (n`quot`2)
@@ -340,7 +360,7 @@ length            = foldl' (\n _ -> n+1) 0
 
 (!!)             :: [a] -> Int -> a      -- xs!!n selects the nth element of
 (x:_)  !! 0       = x                    -- the list xs (first element xs!!0)
-(_:xs) !! (n+1)   = xs !! n              -- for any n < length xs.
+(_:xs) !! n       = xs !! (n-1)              -- for any n < length xs.
 
 iterate          :: (a -> a) -> a -> [a] -- generate the infinite list
 iterate f x       = x : iterate f (f x)  -- [x, f x, f (f x), ...
@@ -412,7 +432,7 @@ filter p (x:xs)
     | otherwise   = xs'
                   where xs' = filter p xs
 
--- Fold primitives:  The foldl and scanl functions, variants foldl1 and
+-- Fold --primitives:  The foldl and scanl functions, variants foldl1 and
 -- scanl1 for non-empty lists, and strict variants foldl' scanl' describe
 -- common patterns of recursion over lists.  Informally:
 --
@@ -483,17 +503,17 @@ scanr1 f (x:xs)   = f x q : qs
 take                :: Int -> [a] -> [a]
 take 0     _         = []
 take _     []        = []
-take (n+1) (x:xs)    = x : take n xs
+take n  (x:xs)       = x : take (n-1) xs
 
 drop                :: Int -> [a] -> [a]
 drop 0     xs        = xs
 drop _     []        = []
-drop (n+1) (_:xs)    = drop n xs
+drop n     (_:xs)    = drop (n-1) xs 
 
 splitAt             :: Int -> [a] -> ([a], [a])
 splitAt 0     xs     = ([],xs)
 splitAt _     []     = ([],[])
-splitAt (n+1) (x:xs) = (x:xs',xs'') where (xs',xs'') = splitAt n xs
+splitAt n     (x:xs) = (x:xs',xs'') where (xs',xs'') = splitAt (n-1) xs
 
 takeWhile           :: (a -> Bool) -> [a] -> [a]
 takeWhile p []       = []
@@ -627,7 +647,7 @@ unzip                     = foldr (\(a,b) ~(as,bs) -> (a:as, b:bs)) ([], [])
 
 -- Formatted output: --------------------------------------------------------
 
-primitive primPrint "primPrint"  :: Int -> a -> String -> String
+--primitive primPrint "primPrint"  :: Int -> a -> String -> String
 
 show'       :: a -> String
 show' x      = primPrint 0 x []
@@ -657,7 +677,7 @@ until p f x | p x       = x
 until'                 :: (a -> Bool) -> (a -> a) -> a -> [a]
 until' p f              = takeUntil p . iterate f
 
-primitive error "primError" :: String -> a
+--primitive error "primError" :: String -> a
 
 undefined              :: a
 undefined | False       = undefined
@@ -698,11 +718,11 @@ instance Text Bool where
     showsPrec d True  = showString "True"
     showsPrec d False = showString "False"
 
-primitive primShowsInt "primShowsInt" :: Int -> Int -> String -> String
+--primitive primShowsInt "primShowsInt" :: Int -> Int -> String -> String
 instance Text Int where showsPrec = primShowsInt
 
 {- PC version off -}
-primitive primShowsFloat "primShowsFloat" :: Int -> Float -> String -> String
+--primitive primShowsFloat "primShowsFloat" :: Int -> Float -> String -> String
 instance Text Float where showsPrec = primShowsFloat
 {- PC version on -}
 
@@ -828,7 +848,7 @@ interact f	 = readChan stdin exit
 run		:: (String -> String) -> Dialogue
 run f		 = echo False exit (interact f)
 
-primitive primFopen "primFopen" :: String -> a -> (String -> a) -> a
+--primitive primFopen "primFopen" :: String -> a -> (String -> a) -> a
 
 openfile        :: String -> String
 openfile f       = primFopen f (error ("can't open file "++f)) id
