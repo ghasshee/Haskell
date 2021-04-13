@@ -26,10 +26,21 @@ padic'''' key h     = line $ map(padic''' key h) $ map(p_strict seed 0 8) [1..8]
 padic''''' key p'   = line $ map(padic'''' key)  $ map(p_strict p'   0 8) [1..8] -- :: [h]   
 padic'''''' key     = line $ map(padic''''' key) $ map(p_strict seed 0 8) [1..8] -- :: [p']  
 
+{-- P-adic --}
+seed2               = 3
+padic2 key h t p    = line $ pSoundList key (1/16) p 53 (70+h) [1..2^t]          --          Dur: (2^t)/16
+padic2' key h t p'  = line $ map(padic key h t)  $ map(p_strict p'      1 9) [1..8] -- :: [p]   Dur: (2^t)/2
+padic2'' key h t    = line $ map(padic' key h t) $ map(p_strict seed2   2 8) [1..8] -- :: [p']  Dur: 2^(t+3)
+padic2''' key h p'  = line $ map(padic'' key h)  $ map(p_strict p'      3 7) [5..8] -- :: [t]   Dur: 2^(
+padic2'''' key h    = line $ map(padic''' key h) $ map(p_strict seed2   4 8) [1..8] -- :: [p']  
+padic2''''' key p'  = line $ map(padic'''' key)  $ map(p_strict p'      0 8) [1..8] -- :: [h]   
+padic2'''''' key    = line $ map(padic''''' key) $ map(p_strict seed2   0 8) [1..8] -- :: [p']  
 
 
-good_melody_1       = line $ (...) map padic''' kfsM 0 [0..7]
-good_melody_2       = line $ (...) map padic''' (kchord 11) 12 [0..7]  
+
+
+good_melody_1       = line $ (...) map padic2''' kfsM 2 [0..7]
+good_melody_2       = line $ (...) map padic2''' (kchord 11) 12 [0..7]  
 r_good_melody_1     = line $ reverse $ lineToList good_melody_1 
 
 
@@ -57,8 +68,7 @@ clock               = long_vowel :=: short_vowel
 
 
 {-- Wind Bell --}
-windBell1           = line [
-    row[c 4(1/8),d 4(1/5)],row[d 4(1/7),e 4(1/8)],row[e 4(1/8),g 4(1/6)]    ]           -- Dur: 107/210
+windBell1           = line [row[c 4(1/8),d 4(1/5)],row[d 4(1/7),e 4(1/8)],row[e 4(1/8),g 4(1/6)]] -- Dur: 107/210
 windBell2           = line [a 4 qn, b 4 (1/5), cs 5 (1/12), d 5 (1/9), e 5 (1/7) ]       -- Dur: 248/315
 windBell3           = line [g 5 qn, a 5 (1/7), b 5 qn, c 6 (1/5), d 6 (1/13)]            -- Dur: 837/910
 windBell            = guitar 2 $ mix' 100 windBell1 windBell2 windBell3
@@ -78,10 +88,10 @@ bth                 = [g 4 hn, a 4 hn, d 4 1]
 bt1                 = concat [bta, btb, btc, btd]       -- dur: 8
 bt2                 = concat [bta, btb, btc, btd']      -- dur: 8
 bt3                 = concat [bte, btf, btg, bth]       -- dur: 8
-
 bt                  = concat [bt1, bt2, bt3, bt2]       -- dur: 32
 rbt                 = reverse bt
-beethoven9          = synth 1 (line bt :+: line rbt)  
+--beethoven9          = synth 1 (line bt :+: line rbt)  
+beethoven9          = cello (line bt :+: line rbt)  
 
 
 {-- Nodojiman --}
@@ -117,4 +127,9 @@ clock_and_beethoven = do
             let bass    = times 3 clock in 
                 p $ row [ vocal, bass, synco 1 hand 48]
 
+brk n = rep (4*n) (rest en) 
 
+after_the_storm = p $ 
+            row [ 
+                    brk 8 :+: egg_song, 
+                    rain :+: double storm :+: brk 16 :+: rain :+: double storm :+: brk 32 :+: rain :+: clock ] 

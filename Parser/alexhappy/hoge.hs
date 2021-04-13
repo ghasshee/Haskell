@@ -1301,5 +1301,5 @@ alexRightContext (sc) user__ _ _ input__ =
           _ -> True
         -- TODO: there's no need to find the longest
         -- match when checking the right context, just
-        -- the first match will do.
+            -- the first match will do.
 

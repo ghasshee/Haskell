@@ -1,3 +1,5 @@
+
+
 module Aop.Tree where
 
 import GHC.Base (liftA2) 
@@ -235,21 +237,19 @@ instance Comonad Tree where
 
 sum_tree = foldt (+) (+) 0 0 
 
-
 -- Try: 
 -- >>> extend sum_tree tt 
 
 
+-----------------------
+-- Simple Calculator --
+-----------------------
 
 
-----------------
--- Simple Lambda Calculus
-------------------
-
-data Tm = TmPlus    -- nonterminal 
-        | TmMult
-        | TmInt Int -- terminal 
-        deriving Show 
+data TmArith    = TmPlus    -- nonterminal 
+                | TmMult
+                | TmInt Int -- terminal 
+                deriving Show 
 
 
 tmPlus a b = Fork(TmPlus,Cons(a,Cons(b,Nil)))
@@ -272,10 +272,20 @@ getOp TmMult = (***)
 
 -- e.g. 
 
-eg1 = tmMult(tmPlus(tmInt 4)(tmInt 7))(tmMult(tmPlus(tmInt 8)(tmInt 3))(tmInt 9))
+tm = tmMult
+        (tmPlus
+            (tmInt 4)
+            (tmInt 7))
+        (tmMult
+            (tmPlus
+                (tmInt 8)
+                (tmInt 3))
+            (tmInt 9))
 
--- Try : 
--- >>> extend eval1 eg1 
+-- Try followings: 
+-- >>> tm 
+-- >>> eval1 tm 
+-- >>> extend eval1 tm 
 
 
 
