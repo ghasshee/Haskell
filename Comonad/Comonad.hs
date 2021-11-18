@@ -1,6 +1,8 @@
 module Comonad.Comonad where 
 
 
+
+
 class Functor w => Comonad w where
     extract     :: w a -> a 
     extend      :: (w b -> a) -> w b -> w a

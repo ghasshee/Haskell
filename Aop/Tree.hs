@@ -83,9 +83,9 @@ bt = br 1
 
 data Bree a' = Tip a' | Bin (Bree a', Bree a')
 instance Show a' => Show (Bree a') where show t = showBree "" t 
-showBree str (Tip x)     = " "  ++ show x ++ "\n"
-showBree str (Bin (x,y)) = "+-" ++ showBree (str ++ "| ") x ++ str ++ 
-                            "+-" ++ showBree (str ++ "  ") y 
+showBree str (Tip x)     = " "   ++ show x ++ "\n"
+showBree str (Bin (x,y)) = "+-"  ++ showBree (str ++ "| ") x ++ str ++ 
+                           "+-"  ++ showBree (str ++ "  ") y 
 tip x   = Tip x
 bin x y = Bin(x,y)
 
@@ -201,6 +201,8 @@ instance Show a' => Show (Tree a')
    where show t = showTree "   " t
 showTree str (Fork(a,x)) = "+- " ++ show a ++ "\n" ++ showForest str x
 showForest str Nil = ""
+showForest str (Cons(Fork(a,x),Nil))= str ++ "+- " ++ show a ++ "\n" ++ 
+                                      showForest (str ++ "   ") x 
 showForest str (Cons(Fork(a,x),xs)) = str ++ "+- " ++ show a ++ "\n" ++
                                       showForest (str ++ "|  ") x ++ showForest str xs
 fork a x = Fork(a,x)
@@ -230,8 +232,8 @@ instance Functor Tree where
     fmap f (Fork(a,Cons(x,xs))) = Fork(f a,Cons(fmap f x,fmap (fmap f) xs))
 
 instance Comonad Tree where 
-    extract (Fork(a,Nil))                 = a 
-    extract (Fork(a,Cons(x,xs)))          = a
+    extract (Fork(a,Nil))               = a 
+    extract (Fork(a,Cons(x,xs)))        = a
     extend treeB2A (Fork(b,Nil))        = Fork(treeB2A (Fork(b,Nil)),Nil) 
     extend treeB2A (Fork(b,Cons(x,xs))) = Fork(treeB2A (Fork(b,Cons(x,xs))),fmap(extend treeB2A)(Cons(x,xs)))
 

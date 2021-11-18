@@ -12,8 +12,8 @@ parse: lex
 
 
 test: all
-	## cat test/BasicTest.vm | ./Main
-	./Main test
+	cat test/Basic/BasicTest.vm | ./Main
+	#./Main test
 
 clean: 
 	rm -rf Lexer.hs *.o *.hi VMTranslate

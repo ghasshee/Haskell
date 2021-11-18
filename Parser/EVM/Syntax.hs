@@ -10,7 +10,7 @@ data WorldState = Map (Address -> Account)
 
 type Address = Undefined -- 160-bit identifier
 
-data Account = Account (Nonce, Balance, StorageRoot, CodeHash) 
+data Account = Account Nonce Balance StorageRoot CodeHash 
 
 
 

@@ -48,6 +48,8 @@ instance Applicative Graph where
 
 instance Monad Graph where 
     g >>= f = buildg $ \e v o c -> foldg e (foldg e v o c . f) o c g
+    {-# INLINE 
+     - 
     
 vertex      ::  a -> Graph a 
 vertex      =   Vertex

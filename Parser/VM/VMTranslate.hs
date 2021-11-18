@@ -241,11 +241,11 @@ sysinit         =   save "Sys.init" 0 ++
                     "0;JMP"             ++ "\n" ++
                     "(RET_ADDR0)"       ++ "\n" 
 
-sysinit'        =   save "Sys.init" 0 ++
-                    "@SP" ++ "\n" ++
-                    "D=M" ++ "\n" ++ 
-                    "@LCL" ++ "\n" ++
-                    "M=D" ++ "\n" ++ 
+sysinit'        =   save "Sys.init" 0   ++
+                    "@SP"               ++ "\n" ++
+                    "D=M"               ++ "\n" ++ 
+                    "@LCL"              ++ "\n" ++
+                    "M=D"               ++ "\n" ++ 
                     "@Sys.init"         ++ "\n" ++
                     "0;JMP"             ++ "\n" 
 
@@ -323,9 +323,9 @@ translate f t      = case t of
     Call f n            -> state (\l -> (call f n l, l+1)) 
     Fun f k             -> return $ fun f k 
     Ret                 -> return $ ret
-    Push Const      n   -> return $ setD_const n       ++ pushD
+    Push Const      n   -> return $ setD_const       n ++ pushD
     Push Static     i   -> return $ setD_static   f  i ++ pushD
-    Push Pointer    i   -> return $ setD_pointer   i   ++ pushD 
+    Push Pointer    i   -> return $ setD_pointer     i ++ pushD 
     Push Local      i   -> return $ setD "LCL"       i ++ pushD 
     Push Arg        i   -> return $ setD "ARG"       i ++ pushD 
     Push This       i   -> return $ setD "THIS"      i ++ pushD 
@@ -345,7 +345,7 @@ translate f t      = case t of
     Sub                 -> return $ sub 
     And                 -> return $ and
     Or                  -> return $ or 
-    Eq                  -> state (\l -> (eq l,l+1))
-    Lt                  -> state (\l -> (lt l,l+1))
-    Gt                  -> state (\l -> (gt l,l+1))
+    Eq                  -> state (\l -> (eq l, l+1))
+    Lt                  -> state (\l -> (lt l, l+1))
+    Gt                  -> state (\l -> (gt l, l+1))
 

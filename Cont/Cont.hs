@@ -3,10 +3,11 @@ module Cont.Cont where
 
 -- for test 
 import Data.Char (chr , ord) 
-ww
-newtype Cont r a = Cont {runCont :: ((a->r)->r) } 
--- runCont  :: Cont r a -> (a->r) -> r 
--- Cont     :: ((a->r)->r) -> Cont r a 
+
+
+newtype Cont k a = Cont {runCont :: ((a->k)->k) } 
+-- runCont  :: Cont k a -> (a->k) -> k 
+-- Cont     :: ((a->k)->k) -> Cont k a 
 
 instance Functor (Cont r) where 
     fmap f          = undefined

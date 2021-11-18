@@ -1,0 +1,13 @@
+group 
+    source (-)    (* export all defined modules *)
+
+    signature CPS
+    functor CPSsemantics
+
+is 
+    $/basis.cm
+
+    $/smlnj-lib.cm
+
+    cps.sml
+    semantics.sml
