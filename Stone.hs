@@ -57,3 +57,6 @@ show_rings n = mapM print $ rings n
 
 
 
+
+
+
