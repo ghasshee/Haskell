@@ -18,4 +18,6 @@ ripemd160 bs    =   convert (hash bs :: Digest RIPEMD160)
 hash160         ::  ByteString -> ByteString 
 hash160         =   ripemd160 . sha256
 
+blake           ::  ByteString -> ByteString 
+blake   bs      =   convert (hash bs :: Digest Blake2s_256)
 

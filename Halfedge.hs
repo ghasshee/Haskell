@@ -48,8 +48,7 @@ instance Applicative Graph where
 
 instance Monad Graph where 
     g >>= f = buildg $ \e v o c -> foldg e (foldg e v o c . f) o c g
-    {-# INLINE 
-     - 
+--    {-# INLINE #-} 
     
 vertex      ::  a -> Graph a 
 vertex      =   Vertex
@@ -74,5 +73,11 @@ buildg f = f Empty Vertex Overlay Connect
 {-# INLINE [1] buildg #-} 
 
 composeR = (.) 
+
+
+
+
+v :: Integer -> Graph Integer
+v n = fromInteger n 
 
 

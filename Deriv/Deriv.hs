@@ -42,9 +42,12 @@ instance Floating a => Floating (D a) where
 
 
 
-data Dif a = D { dVal :: a, deriv :: Dif a } 
-        deriving Show 
+-- data Dif a = D { dVal :: a, deriv :: Dif a } 
+--        deriving Show 
 
+import Control.Applicative
+
+data Dif a = D a (Dif a) deriving Show 
 
 dConst          :: Num a => a -> Dif a 
 dConst x0       = D x0 dZero 
@@ -52,19 +55,40 @@ dConst x0       = D x0 dZero
 dZero           :: Num a => Dif a 
 dZero           = D 0 dZero 
 
-
-instance Num a => Num (Dif a) where 
-    D x x' + D y y'         = D (x+y)(x'+y')
-    D x x'  * D y y'        = D (x*y)(x' * D y y' + y' * D x x') 
-    negate (D x x')         = D (negate x) (negate x') 
-    signum (D x x')         = D (signum x) dZero
-    fromInteger n           = D (fromInteger n) dZero
-    abs    (D x x')         = D (abs x) (signum(dConst x) * x') 
-
-dlift :: Num a => (a->a) -> (Dif a->Dif a) -> Dif a -> Dif a
-dlift f f'  (D x x') = D (f x) (f' (D x x') * x') 
+dlift :: Num a => (a -> a) -> (Dif a -> Dif a) -> Dif a -> Dif a
+dlift f df (D x x') = D (f x) (df (D x x') * x') 
     
-inftx 0 >-< 
+instance Num b => Num (a->b) where 
+    fromInteger     =   pure . fromInteger 
+    (+)             =   liftA2 (+)
+    (*)             =   liftA2 (*)
+    negate          =   fmap negate
+    abs             =   fmap abs
+    signum          =   fmap signum
+
+
+infix 0 >-< 
 (>-<) = dlift
 
 
+instance Num a => Num (Dif a) where 
+    fromInteger n           = D (fromInteger n) dZero
+    D x x' + D y y'         = D (x+y)(x'+y')
+    D x x'  * D y y'        = D (x*y)(x' * D y y' + y' * D x x') 
+    --negate (D x x')         = D (negate x) (negate x') 
+    --abs    (D x x')         = D (abs x) (signum(dConst x) * x') 
+    --signum (D x x')         = D (signum x) dZero
+    negate                  = negate >-< -1 
+    abs                     = abs    >-< signum 
+    signum                  = signum >-< 0 
+
+instance Fractional a => Fractional (Dif a) where 
+    fromRational = dConst . fromRational 
+    recip        = recip >-< - sqr recip 
+
+instance Floating a => Floating (Dif a) where 
+    pi          = dConst pi
+    exp         = exp   >-< exp 
+    log         = log   >-< recip 
+    sqrt        = sqrt  >-< recip (2 * sqrt) 
+    sin         = sin   >-< cos 
