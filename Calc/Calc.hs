@@ -4,6 +4,7 @@ import Data.Char
 import Control.Monad
 import Control.Applicative hiding (somer, many) 
 import Core 
+import System.IO
 
 
 {------------------ Syntax --------------------} 
@@ -45,6 +46,6 @@ run     = runParser expr
 main    :: IO ()
 main    = forever $ do
     putStr "Haskell Calculator >>> "
-    flush stdout
+    hFlush stdout
     a <- getLine
     print $ eval $ run a
