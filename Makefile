@@ -1,5 +1,5 @@
 all: 
-	:
+	exec ./make.sh	
 
 
 clean: 

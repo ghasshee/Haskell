@@ -2,7 +2,9 @@
 
 DIR=~/Programs/hs/Haskell
 ls | while read line ; do 
-    pwd
-    cd $DIR/$line && make clean 
-    cd $DIR
+    if [ -d $line ]     
+    then
+        cd $DIR/$line && pwd && make clean 
+        cd $DIR
+    fi 
 done 

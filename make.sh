@@ -2,7 +2,10 @@
 
 DIR=~/Programs/hs/Haskell
 ls | while read line ; do 
-    pwd
-    cd $DIR/$line && make
-    cd $DIR
+    echo "hoge$line"
+    if [ -d $line ]     
+    then
+        cd $DIR/$line && pwd && make
+        cd $DIR
+    fi 
 done 
