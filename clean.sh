@@ -1,6 +1,6 @@
 #!/bin/sh 
 
-DIR=~/Programs/hs/Haskell
+DIR=~/Programs/Haskell
 ls | while read line ; do 
     if [ -d $line ]     
     then
