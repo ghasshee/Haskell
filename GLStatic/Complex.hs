@@ -17,9 +17,14 @@ i                           = C 0 1
 half                        = C(1/2)0
 reciprocal Infinity         = zero
 reciprocal  z               = one/z
-toPoler                     = log
-fromPoler                   = exp 
-pow w                       = fromPoler . (*) w . toPoler  
+
+cLog :: Complex -> Complex 
+cLog (C x y)                = C (log (sqrt (x^2 + y^2))) (atan2 y x) 
+cExp :: Complex -> Complex 
+cExp (C x y)                = C (exp x * cos y) (exp x * sin y)  
+pow :: Complex -> Complex -> Complex 
+pow z w                     = cExp (w * cLog z)  
+
 
 instance Show Complex where 
     show (C x 0)            = show x

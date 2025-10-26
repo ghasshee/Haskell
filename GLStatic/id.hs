@@ -28,7 +28,7 @@ f12 z       = pow z (- i) + pow z i
 f13 z       = pow (z^2 + 1/z) i   
 f14 z       = 1 / (z - (C 1 1)) 
 
-f = f10
+f = id 
 
 f'                          = modify f riemann
 modify f  riemann           = filter small . fmap ( fmap ( riemann . fromComplex . zoomdown 1 . f . toComplex )   ) 

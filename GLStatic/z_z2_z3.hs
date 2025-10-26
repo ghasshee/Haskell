@@ -8,27 +8,25 @@ target  = [0,0,0]
 up      :: [GLdouble] 
 up      = [0,1,0]
 
-z_z2_z3 z   = (z - z*z - z*z*z) / 5 
-fish z      = (-1 - i) * (z - (C 0.5 (-0.5))) * (z + 1)  
-z2_1 z      = (z - 1) * (z + 1)
-eg01 z      = (z - i) * (z - 1)
+z_z2_z3 z   = (z - z*z - z*z*z) / (C 5 0)
+fish z      = (C (-1) 0) + (C 0 (-1)) * (z - (C 0.5 (-0.5))) * (z - (C (-1) 0))  
+z2_1 z      = (z - (C 1 0))*(z + (C 1 0) )
+eg01 z      = (z - (C 0 1)) * (z - (C 1 0))
 f01 z       = acos z
 f02 z       = z 
 f03 z       = cos z  
 f04 z       = exp z 
-f05 z       =  (z - i) * (z -(C 0.5 0.8)  )
+f05 z       =  (z -(C 0 1)) * (z -(C 0.5 0.8)  )
 f06 z       = z^2 + z
-f07 z       = - ( z - i ) / (C 2 0) 
+f07 z       = - ( z - (C 0 1) ) / (C 2 0) 
 f08 z       = z^2 + 1
-f09 z       = z^3 - 3 * z
-f10 z       = pow z (C 1 0.2)   
-pow_i z     = pow z i  
-f11 z       = z * ( pow_i z ) 
-f12 z       = pow z (- i) + pow z i      
-f13 z       = pow (z^2 + 1/z) i   
-f14 z       = 1 / (z - (C 1 1)) 
-
-f = f10
+f09 z       = z^3 - (C 3 0)*z
+-- f          = pow (C 1 0.2)   
+-- f z  = z * ( pow_i z ) 
+-- f z = pow (-i)  z + pow i z    
+-- f z = pow i (z^2 + one/z) 
+--f z = one/ (z-(C 1 1)) 
+f = z_z2_z3
 
 f'                          = modify f riemann
 modify f  riemann           = filter small . fmap ( fmap ( riemann . fromComplex . zoomdown 1 . f . toComplex )   ) 

@@ -96,7 +96,7 @@ ez t = 10
 ox t = 0.0
 oy t = 0.0
 oz t = 0.0
-
+    {--
 main :: IO ()
 main = do
   setter initialDisplayMode         $ [RGBAMode, DoubleBuffered, WithDepthBuffer] 
@@ -107,7 +107,7 @@ main = do
   setter reshapeCallback            $ Just (reshape ex ey ez ox oy oz 0)     
   addTimerCallback timerInterval    $ call display x y z reshape ex ey ez ox oy oz 0 
   mainLoop
-
+--}
 main                        :: IO ()
 main                        = do 
     (_prog, _args)              <- getArgsAndInitialize
@@ -115,7 +115,7 @@ main                        = do
     _window                     <- createWindow "arrow"
     displayCallback             $= display
     mainLoop
-
+        {--
 display x y z t = do
     setter clearColor $ backcolor
     clear [ColorBuffer, DepthBuffer]
@@ -125,7 +125,7 @@ display x y z t = do
         action x y z t  
         renderObject Solid (Sphere' 0.7 10 10)
     swapBuffers
-
+--}
 display :: DisplayCallback
 display = do
     clear [ColorBuffer]
